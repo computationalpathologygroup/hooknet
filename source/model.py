@@ -31,7 +31,7 @@ class HookNet(Model):
                  depth: int = 4,
                  n_convs: int = 2,
                  filter_size: int = 3,
-                 n_filters: int = 64,
+                 n_filters: int = 4,
                  padding: str = 'valid',
                  batch_norm: bool = True,
                  activation: str = 'relu',
@@ -45,7 +45,7 @@ class HookNet(Model):
         Parameters
         ----------
         input_shape : List[int]
-            the input shape of the model 
+            the input shape of the model for both branches
 
         n_classes: int
             the possible number of classes in the output of the model
@@ -121,15 +121,21 @@ class HookNet(Model):
     @property
     def input_shape(self) -> List[int]:
         """Return the input shape of the model"""
+
         return self._input_shape
 
     @property
     def output_shape(self) ->  List[int]:
         """Return the output shape of the model before flattening"""
+
         return self._output_shape
+
+    def multi_loss(self) -> bool:
+        return self._multi_loss
 
     def _construct_hooknet(self) -> None:
         """Construction of single/multi-loss model with multiple inputs and single/multiple outputs"""
+
         # declaration of context input
         input_2 = Input(self._input_shape)
 
@@ -189,10 +195,10 @@ class HookNet(Model):
         net = Conv2D(self._n_classes, 1, activation='softmax')(net)
 
         # set output shape
-        self._output_shape = K.int_shape(net)
+        self._output_shape = K.int_shape(net)[1:]
 
         # Reshape net
-        flatten = Reshape((self.output_shape[1] * self.output_shape[2], self.output_shape[3]), name=reshape_name)(net)
+        flatten = Reshape((self.output_shape[0] * self.output_shape[1], self.output_shape[2]), name=reshape_name)(net)
 
         # return flatten output and hooks
         return flatten, out_hooks
@@ -451,5 +457,3 @@ class HookNet(Model):
         
         # Raise ValueError if merge type is unsupported
         raise ValueError(f'unsupported merge type: {self._merge_type}')
-
-  

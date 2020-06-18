@@ -1,0 +1,25 @@
+## data:
+data_path: './data'
+output_path: './output'
+
+# model
+input_shape: [284, 284, 3]
+n_classes: 6
+resolutions: [0.5, 8.0]
+hook_indexes: [3, 3]
+depth: 4
+n_filters: 64
+padding: 'valid'
+batch_norm: true
+learning_rate: 0.000005
+l2_lambda: 0.01
+opt_name: 'adam'
+loss_weights: [0.75, 0.25]
+
+# train
+epochs: 2
+steps: 2
+batch_size: 2
+
+# system
+seed: 123
