@@ -7,7 +7,8 @@
  - This code has been tested on Ubuntu 18.04, keras==2.0.8 and tensorflow-gpu==1.14
  
 ##### Examples
- - train.py in this repository will train HookNet on random values. Please adjust the script with your own batchgenerator or sampling function. For an elaborate explanantion how to use your own batchgenerator, sampling function or how to use our developed batchgenerator for sampling input patches from WSIs please see train.ipynb in the notebook folder.
+ - train.py in this repository will train HookNet on random values. Please adjust the script with your own batchgenerator or sampling function. 
+ - For an elaborate explanantion how to use your own batchgenerator, sampling function or how to use our developed batchgenerator for sampling input patches from WSIs, please see train.ipynb in the notebook folder. This notebook also includes an eloborate explanantion about the possible settings for HookNet. 
  
 
 #### Inference
