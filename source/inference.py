@@ -76,9 +76,9 @@ class Inference:
         return [np.argmax(prediction, -1).astype('uint8')+1 for prediction in predictions]
 
     def _test_on_wsi(self):
+        index = 0
         t1_read = time.time()
         for data in iter(self._reader_queue.get, 'STOP'):
-            t2_read = time.time()
             X_batch, items = data 
             X_batch = normalize(X_batch)
             pred = self._model_instance.predict_on_batch(x=X_batch)
@@ -89,8 +89,9 @@ class Inference:
                 predictions = self._post_process(pred)
                 
             self._writerdeamon.put((predictions, items))
-            t1_read = time.time()
-        # self._writer_queue.put(('STOP'))
+      
+            print(f'{index} tiles processed')
+            index += 1
 
     def start(self):
         # start reader

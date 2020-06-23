@@ -222,7 +222,6 @@ class WSIWriterDeamon():
             prediction = prediction.reshape((self._output_shape[0], self._output_shape[1]))
             self._writer._ImageWriter__writer.writeBaseImagePartToLocation(prediction[:self._tile_size, :self._tile_size].flatten(), col, row)
         t2 = time.time()
-        print('tile writing time:', t2-t1)
 
        
 

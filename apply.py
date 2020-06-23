@@ -21,21 +21,21 @@ cpus = 6
 # queue size for sending batches
 queue_size = 10
 
-# working directorie
-work_dir = '/home/user/'
-
 # parse arguments
 parser = ArgumentConfigParser('./parameters.yml', description='HookNet')
 parser.add_argument("-i", '--image_path', dest="image_path", required=True,
                     help="input image path", metavar="FILE_PATH", type=lambda x: is_valid_file(parser, x))
 parser.add_argument("-m", '--mask_path', dest="mask_path", required=False,
                     help="mask image path", metavar="FILE_PATH", type=lambda x: is_valid_file(parser, x))
-parser.add_argument("-o", '--output_path', dest="output_path", required=True,
-                    help="output image path", metavar="FILE_PATH", type=lambda x: is_valid_file(parser, x))
 parser.add_argument("-w", '--weights_path', dest="weights_path", required=True,
                     help="weights file path", metavar="FILE_PATH", type=lambda x: is_valid_file(parser, x))
+parser.add_argument("-d", '--work_dir', dest="work_dir", required=True,
+                    help="work directory", metavar="FILE_PATH", type=lambda x: is_valid_file(parser, x))
 config = parser.parse_args()
 pprint(f'CONFIG: \n{config}')
+
+
+
 
 
 # initialize model
@@ -69,12 +69,13 @@ print('output_path:', true_output_path)
 
 
 print('copy to local folder...')
-shutil.copy2(true_image_path, work_dir)
-shutil.copy2(true_mask_path, work_dir)
+shutil.copy2(true_image_path, config['work_dir'])
+if true_mask_path:
+    shutil.copy2(true_mask_path, config['work_dir'])
 
-image_path = os.path.join(work_dir, os.path.basename(true_image_path))
-mask_path = os.path.join(work_dir, os.path.basename(true_mask_path))
-output_path = os.path.join(work_dir, os.path.basename(true_image_path).replace('.', '_hooknet.'))
+image_path = os.path.join(config['work_dir'], os.path.basename(true_image_path))
+mask_path = os.path.join(config['work_dir'], os.path.basename(true_mask_path)) if true_mask_path else true_mask_path
+output_path = os.path.join(config['work_dir'], os.path.basename(true_image_path).replace('.', '_hooknet.'))
 
 print('apply hooknet...')
 apply = Inference(image_path,
