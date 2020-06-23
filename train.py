@@ -1,8 +1,17 @@
-import argconfigparser
+import os
+import yaml
+
+from argconfigparser import ArgumentConfigParser
 from source.model import HookNet
 from source.generator.batchgenerator import RandomBatchGenerator
 from source.trainer import HookNetTrainer
 
+
+def is_valid_file(parser, arg):
+    if not os.path.exists(arg):
+        parser.error("The file %s does not exist!" % arg)
+    else:
+        return arg
 
 def train():
     """
@@ -13,8 +22,9 @@ def train():
     """
 
     # parse config and command line arguments
-    config = argconfigparser.parse('./parameters.yml')
-    print(f'CONFIG: \n{config}')
+    parser = ArgumentConfigParser('./parameters.yml', description='HookNet')
+    config = parser.parse_args()
+    print(f'CONFIG: \n------\n{yaml.dump(config)}')
 
     # initialize model
     hooknet = HookNet(input_shape=config['input_shape'],

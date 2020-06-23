@@ -6,13 +6,14 @@ from pprint import pprint
 import ast
 import os.path
 
+from argparse import ArgumentParser
+
 class RecursiveLoader(yaml.Loader):
 
     """
     Yaml loader for including yaml files in yaml file with !include or !import
 
     """
-
 
     def __init__(self, stream):
         self._root = os.path.split(stream.name)[0]
@@ -55,82 +56,89 @@ def _str2value(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def parse(config_file_path : str, notebook : bool = False) -> Dict:
+class ArgumentConfigParser(ArgumentParser):
     """
-    This function parses a given config yaml file and overwrites same named parameters with command line arguments
+    This class parses a given config yaml file and overwrites same named parameters with command line arguments
     Lists are set by spaces between values (e.g., --list_argument list_item1 list_item2 list_item3).
     Dictionaries in dictionaries are set by ':' signs between values (e.g., --parent_dict_key:child_dict_key child_dict_value). 
-
-    Parameters
-    ----------
-    config_file_path : str
-        path to the config file
-    notebook : bool
-        if notebook is True no command line arguments are parsed (useful when working in a notebook)
-
-    Returns
-    -------
-    config: Dict
-        All key-value pairs defined in the config file, possibly overwritten by command line arguments
-
     """
 
-    config = None
+    def __init__(self, config_file_path : str, notebook : bool = False, description : str = '') -> None:
+        """
+        Parameters
+        ----------
+        config_file_path : str
+            path to the config file
+        notebook : bool
+            if notebook is True no command line arguments are parsed (useful when working in a notebook)
 
-    with open(config_file_path) as json_config:
-        config = yaml.load(json_config, Loader=RecursiveLoader)
+        Returns
+        -------
+        config: Dict
+            All key-value pairs defined in the config file, possibly overwritten by command line arguments
 
-    if notebook:
+        """
+
+        self._config_file_path = config_file_path
+
+        self._config = None
+
+        with open(self._config_file_path) as json_config:
+            self._config = yaml.load(json_config, Loader=RecursiveLoader)
+
+        if notebook:
+            return self._config
+
+        super().__init__(description=description)
+        self.add_argument('-c', '--config', help='config file location', required=False)
+        self._add_arguments(self._config)
+
+    def parse_args(self) -> Dict:
+        args = vars(super().parse_args())
+
+        # if config file is given via command line, set config file
+        if args['config']:
+            with open(args['config']) as yml_config:
+                self._config = yaml.load(yml_config, Loader=RecursiveLoader)
+        else:
+            args['config'] = self._config_file_path
+
+        return self._set_arguments(self._config, args)
+
+    def _set_arguments(self, config, args, rekey=None) -> Dict:
+        # if value is not set through arguments set value
+        for key, value in config.items():
+            value_type = type(value)
+            setkey = ':'.join((str(rekey), str(key))) if rekey else key
+            if value_type == dict:
+                config[key] = self._set_arguments(value, args, setkey)
+            if setkey in args:
+                if args[setkey] is not None:
+                    config[key] = args[setkey]
+                del args[setkey]
+            if value_type == str  and value.lower() == 'none':
+                config[key] = None
+        config.update(args)
         return config
 
-    parser = argparse.ArgumentParser(description='Hooknet')
-    parser.add_argument('-c', '--config', help='config file location', required=False)
-
-    _add_arguments(parser, config)
-
-    args = vars(parser.parse_args())
-
-    # if custom config file is given, set config file
-    if args['config']:
-        with open(args['config']) as yml_config:
-            config = yaml.load(yml_config, Loader=RecursiveLoader)
-    else:
-        args['config'] = config_file_path
-
-    return _set_arguments(config, args)
-
-def _set_arguments(config, args, rekey=None):
-    # if value is not set through arguments set value
-    for key, value in config.items():
-        value_type = type(value)
-        setkey = ':'.join((str(rekey), str(key))) if rekey else key
-        if value_type == dict:
-            config[key] = _set_arguments(value, args, setkey)
-        if setkey in args:
-            if args[setkey] is not None:
-                config[key] = args[setkey]
-        if value_type == str  and value.lower() == 'none':
-            config[key] = None
-    return config
-
-def _add_arguments(parser, config, rekey=None):
-    # add keys from config file to parser arguments
-    for key, value in config.items():
-        value_type = type(value)
-        setkey = ':'.join((str(rekey),str(key))) if rekey else key
-        # list type
-        if value_type == list:
-            item_type = type(config[key][0]) if len(config[key]) else int
-            parser.add_argument('--' + str(setkey), required=False, nargs='+', type=item_type)
-        # bool type
-        elif value_type == bool:
-            parser.add_argument('--' + str(setkey), required=False, type=_str2value)
-        # recursive add dict keys
-        elif value_type == dict:
-            _add_arguments(parser, config[key], rekey=key)
-        elif value_type == str and value == 'None':
-            parser.add_argument('--' + setkey, required=False, type=_str2value)
-        # int, float, string type
-        else:
-            parser.add_argument('--' + str(setkey), required=False, type=value_type)
+    def _add_arguments(self, config, rekey=None):
+        # add keys from config file to parser arguments
+        for key, value in config.items():
+            value_type = type(value)
+            setkey = ':'.join((str(rekey),str(key))) if rekey else key
+            # list type
+            if value_type == list:
+                item_type = type(config[key][0]) if len(config[key]) else int
+                self.add_argument('--' + str(setkey), required=False, nargs='+', type=item_type)
+            # bool type
+            elif value_type == bool:
+                self.add_argument('--' + str(setkey), required=False, type=_str2value)
+            # recursive add dict keys
+            elif value_type == dict:
+                self._add_arguments(config[key], rekey=key)
+            elif value_type == str and value == 'None':
+                self.add_argument('--' + setkey, required=False, type=_str2value)
+            # int, float, string type
+            else:
+                self.add_argument('--' + str(setkey), required=False, type=value_type)
 
