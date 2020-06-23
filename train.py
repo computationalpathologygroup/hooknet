@@ -1,7 +1,7 @@
 import argconfigparser
 from source.model import HookNet
 from source.generator.batchgenerator import RandomBatchGenerator
-from source.trainer import Trainer
+from source.trainer import HookNetTrainer
 
 
 def train():
@@ -9,7 +9,7 @@ def train():
     train function
 
     This train function is made for illustration and testing purposes only, as it uses a RandomBatchGenerator (i.e., random generated data)
-    
+
     """
 
     # parse config and command line arguments
@@ -40,11 +40,12 @@ def train():
                                           n_classes=config['n_classes'])
 
     # initialize trainer
-    trainer = Trainer(model=hooknet,
-                      batch_generator=batchgenerator,
-                      epochs=config['epochs'],
-                      steps=config['steps'],
-                      batch_size=config['batch_size'])
+    trainer = HookNetTrainer(model=hooknet,
+                             batch_generator=batchgenerator,
+                             epochs=config['epochs'],
+                             steps=config['steps'],
+                             batch_size=config['batch_size'],
+                             output_path=config['output_path'])
 
     # train
     trainer.train()

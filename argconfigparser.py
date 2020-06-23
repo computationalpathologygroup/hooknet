@@ -6,7 +6,7 @@ from pprint import pprint
 import ast
 import os.path
 
-class Loader(yaml.Loader):
+class RecursiveLoader(yaml.Loader):
 
     """
     Yaml loader for including yaml files in yaml file with !include or !import
@@ -16,9 +16,9 @@ class Loader(yaml.Loader):
 
     def __init__(self, stream):
         self._root = os.path.split(stream.name)[0]
-        super(Loader, self).__init__(stream)
-        Loader.add_constructor('!include', Loader.include)
-        Loader.add_constructor('!import',  Loader.include)
+        super().__init__(stream)
+        RecursiveLoader.add_constructor('!include', RecursiveLoader.include)
+        RecursiveLoader.add_constructor('!import',  RecursiveLoader.include)
 
     def include(self, node):
         if isinstance(node, yaml.ScalarNode):
@@ -43,9 +43,9 @@ class Loader(yaml.Loader):
     def extractFile(self, filename):
         filepath = os.path.join(self._root, filename)
         with open(filepath, 'r') as f:
-            return yaml.load(f, Loader)
+            return yaml.load(f, RecursiveLoader)
 
-def str2value(v):
+def _str2value(v):
     if v.lower() in ('yes', 'true', 't', 'y'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n'):
@@ -66,7 +66,7 @@ def parse(config_file_path : str, notebook : bool = False) -> Dict:
     config_file_path : str
         path to the config file
     notebook : bool
-        if notebook is True no command line arguments are parsed (usefull when working in a notebook)
+        if notebook is True no command line arguments are parsed (useful when working in a notebook)
 
     Returns
     -------
@@ -78,7 +78,7 @@ def parse(config_file_path : str, notebook : bool = False) -> Dict:
     config = None
 
     with open(config_file_path) as json_config:
-        config = yaml.load(json_config, Loader=Loader)
+        config = yaml.load(json_config, Loader=RecursiveLoader)
 
     if notebook:
         return config
@@ -86,26 +86,26 @@ def parse(config_file_path : str, notebook : bool = False) -> Dict:
     parser = argparse.ArgumentParser(description='Hooknet')
     parser.add_argument('-c', '--config', help='config file location', required=False)
 
-    add_arguments(parser, config)
+    _add_arguments(parser, config)
 
     args = vars(parser.parse_args())
 
     # if custom config file is given, set config file
     if args['config']:
         with open(args['config']) as yml_config:
-            config = yaml.load(yml_config, Loader=Loader)
+            config = yaml.load(yml_config, Loader=RecursiveLoader)
     else:
         args['config'] = config_file_path
 
-    return set_arguments(config, args)
+    return _set_arguments(config, args)
 
-def set_arguments(config, args, rekey=None):
+def _set_arguments(config, args, rekey=None):
     # if value is not set through arguments set value
     for key, value in config.items():
         value_type = type(value)
         setkey = ':'.join((str(rekey), str(key))) if rekey else key
         if value_type == dict:
-            config[key] = set_arguments(value, args, setkey)
+            config[key] = _set_arguments(value, args, setkey)
         if setkey in args:
             if args[setkey] is not None:
                 config[key] = args[setkey]
@@ -113,7 +113,7 @@ def set_arguments(config, args, rekey=None):
             config[key] = None
     return config
 
-def add_arguments(parser, config, rekey=None):
+def _add_arguments(parser, config, rekey=None):
     # add keys from config file to parser arguments
     for key, value in config.items():
         value_type = type(value)
@@ -124,12 +124,12 @@ def add_arguments(parser, config, rekey=None):
             parser.add_argument('--' + str(setkey), required=False, nargs='+', type=item_type)
         # bool type
         elif value_type == bool:
-            parser.add_argument('--' + str(setkey), required=False, type=str2value)
+            parser.add_argument('--' + str(setkey), required=False, type=_str2value)
         # recursive add dict keys
         elif value_type == dict:
-            add_arguments(parser, config[key], rekey=key)
+            _add_arguments(parser, config[key], rekey=key)
         elif value_type == str and value == 'None':
-            parser.add_argument('--' + setkey, required=False, type=str2value)
+            parser.add_argument('--' + setkey, required=False, type=_str2value)
         # int, float, string type
         else:
             parser.add_argument('--' + str(setkey), required=False, type=value_type)
