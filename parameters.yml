@@ -7,14 +7,18 @@ input_shape: [284, 284, 3]
 n_classes: 6
 resolutions: [0.5, 8.0]
 hook_indexes: [3, 3]
+n_convs: 2
 depth: 4
-n_filters: 64
+n_filters: 16
+filter_size: 3
 padding: 'valid'
 batch_norm: true
+activation: 'relu'
 learning_rate: 0.000005
-l2_lambda: 0.01
+l2_lambda: 0.0001
 opt_name: 'adam'
-loss_weights: [0.75, 0.25]
+loss_weights: [1.0, 0.0]
+merge_type: 'concat'
 
 # train
 epochs: 2

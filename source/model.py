@@ -31,7 +31,7 @@ class HookNet(Model):
                  depth: int = 4,
                  n_convs: int = 2,
                  filter_size: int = 3,
-                 n_filters: int = 4,
+                 n_filters: int = 64,
                  padding: str = 'valid',
                  batch_norm: bool = True,
                  activation: str = 'relu',

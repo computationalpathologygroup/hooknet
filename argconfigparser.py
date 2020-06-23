@@ -1,3 +1,4 @@
+from typing import Dict
 import yaml
 import argparse
 import sys
@@ -6,6 +7,13 @@ import ast
 import os.path
 
 class Loader(yaml.Loader):
+
+    """
+    Yaml loader for including yaml files in yaml file with !include or !import
+
+    """
+
+
     def __init__(self, stream):
         self._root = os.path.split(stream.name)[0]
         super(Loader, self).__init__(stream)
@@ -37,7 +45,7 @@ class Loader(yaml.Loader):
         with open(filepath, 'r') as f:
             return yaml.load(f, Loader)
 
-def str2bool(v):
+def str2value(v):
     if v.lower() in ('yes', 'true', 't', 'y'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n'):
@@ -47,7 +55,25 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def parse(config_file_path, notebook=False):
+def parse(config_file_path : str, notebook : bool = False) -> Dict:
+    """
+    This function parses a given config yaml file and overwrites same named parameters with command line arguments
+    Lists are set by spaces between values (e.g., --list_argument list_item1 list_item2 list_item3).
+    Dictionaries in dictionaries are set by ':' signs between values (e.g., --parent_dict_key:child_dict_key child_dict_value). 
+
+    Parameters
+    ----------
+    config_file_path : str
+        path to the config file
+    notebook : bool
+        if notebook is True no command line arguments are parsed (usefull when working in a notebook)
+
+    Returns
+    -------
+    config: Dict
+        All key-value pairs defined in the config file, possibly overwritten by command line arguments
+
+    """
 
     config = None
 
@@ -71,11 +97,7 @@ def parse(config_file_path, notebook=False):
     else:
         args['config'] = config_file_path
 
-    set_arguments(config, args)
-
-    print('config:')
-    pprint(config)
-    return config
+    return set_arguments(config, args)
 
 def set_arguments(config, args, rekey=None):
     # if value is not set through arguments set value
@@ -102,12 +124,12 @@ def add_arguments(parser, config, rekey=None):
             parser.add_argument('--' + str(setkey), required=False, nargs='+', type=item_type)
         # bool type
         elif value_type == bool:
-            parser.add_argument('--' + str(setkey), required=False, type=str2bool)
+            parser.add_argument('--' + str(setkey), required=False, type=str2value)
         # recursive add dict keys
         elif value_type == dict:
             add_arguments(parser, config[key], rekey=key)
         elif value_type == str and value == 'None':
-            parser.add_argument('--' + setkey, required=False, type=str2bool)
+            parser.add_argument('--' + setkey, required=False, type=str2value)
         # int, float, string type
         else:
             parser.add_argument('--' + str(setkey), required=False, type=value_type)
