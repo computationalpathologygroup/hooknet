@@ -8,7 +8,7 @@
  
 ##### Examples
  - train.py will train HookNet on random values. Please adjust the script with your own batchgenerator or sampling function. 
- - For an explanation about possible settings see the comments in parameters.yml. All settings defined in parameters.yml can be overwritten via command line arguments (see argconfigparser.py:parse for more info).  
+ - For an explanation about possible settings see the comments in parameters.yml. All settings defined in parameters.yml can be overwritten via command line arguments (see argconfigparser.py for more info).  
  
 
 #### Inference
@@ -23,9 +23,11 @@
   
 For more information, please check the code comments and the doc strings. If you happen to experience any problems, have questions, or would like to give feedback, feel free to open an issue.
 
-A pretraind model on breast or colon can used on https://grand-challenge.org/. Please create an user account and request access to an algorith if you are interested.  
+A pretraind model on breast or colon can be applied via https://grand-challenge.org/. Please create an user account and request access to an algorith if you are interested. 
+
 You can try out a pretrained HookNet on breast tissue here:  
 https://grand-challenge.org/algorithms/hooknet/  
+
 You can try out a pretrained HookNet on colon tissue here:  
 https://grand-challenge.org/algorithms/hooknet-colon/
 
