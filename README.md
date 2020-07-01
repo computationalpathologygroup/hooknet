@@ -1,6 +1,8 @@
 # HookNet
 ## Multi-resolution convolutional neural networks for semantic segmentation in histopathology whole-slide images.
 
+### ExaMode
+
 #### Training
 
 ##### dependecies
