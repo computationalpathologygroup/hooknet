@@ -92,7 +92,7 @@ class HookNet(Model):
 
         self._input_shape = input_shape
         self._n_classes = n_classes
-        self._hook_indexes = {depth-hook_indexes[0]: hook_indexes[1]}
+        self._hook_indexes = {(depth-1)-hook_indexes[0]: hook_indexes[1]}
         self._depth = depth
         self._n_convs = n_convs
         self._filter_size = filter_size
