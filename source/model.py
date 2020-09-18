@@ -1,10 +1,11 @@
 from typing import List, Dict, Tuple
 
 from tensorflow.python.framework.ops import Tensor
-from keras import regularizers
-from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, UpSampling2D, Cropping2D, concatenate, Add, Subtract, Multiply, Input, Reshape
-from keras.models import Model, K
-from keras.optimizers import Optimizer, SGD, Adam
+from tensorflow.keras import regularizers
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, BatchNormalization, UpSampling2D, Cropping2D, concatenate, Add, Subtract, Multiply, Input, Reshape
+from tensorflow.keras.models import Model
+from tensorflow.keras.backend import int_shape
+from tensorflow.keras.optimizers import Optimizer, SGD, Adam
 
 class HookNet(Model):
 
@@ -89,7 +90,7 @@ class HookNet(Model):
         merge_type: str
             method used for combining feature maps (either 'concat', 'add', 'subtract', 'multiply')
         """
-
+        super().__init__()
         self._input_shape = input_shape
         self._n_classes = n_classes
         self._hook_indexes = {(depth-1)-hook_indexes[0]: hook_indexes[1]}
@@ -195,7 +196,7 @@ class HookNet(Model):
         net = Conv2D(self._n_classes, 1, activation='softmax')(net)
 
         # set output shape
-        self._output_shape = K.int_shape(net)[1:]
+        self._output_shape = int_shape(net)[1:]
 
         # Reshape net
         flatten = Reshape((self.output_shape[0] * self.output_shape[1], self.output_shape[2]), name=reshape_name)(net)
@@ -228,13 +229,6 @@ class HookNet(Model):
        
         # compile model
         self.compile(optimizer=self._opt(), loss=losses, loss_weights=loss_weights, metrics=['accuracy'])
-
-        # add output predictions as a metric
-        if self._multi_loss:
-            self.metrics_tensors += [self.outputs[0]]
-        else:
-            self.metrics_tensors += self.outputs
-        self.metrics_names += ['predictions']
     
     def _opt(self) -> Optimizer:
         """
