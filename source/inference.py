@@ -5,6 +5,7 @@ from collections import deque
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras import backend
 from multiprocessing import Queue
 from .image.deamons import WSIReaderDeamon, WSIWriterDeamon
 

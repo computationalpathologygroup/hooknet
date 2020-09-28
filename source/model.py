@@ -2,10 +2,24 @@ from typing import List, Dict, Tuple
 
 from tensorflow.python.framework.ops import Tensor
 from tensorflow.keras import regularizers
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, BatchNormalization, UpSampling2D, Cropping2D, concatenate, Add, Subtract, Multiply, Input, Reshape
+from tensorflow.keras.layers import (
+    Conv2D,
+    MaxPooling2D,
+    BatchNormalization,
+    UpSampling2D,
+    Cropping2D,
+    concatenate,
+    Add,
+    Subtract,
+    Multiply,
+    Input,
+    Reshape,
+)
 from tensorflow.keras.models import Model
 from tensorflow.keras.backend import int_shape
 from tensorflow.keras.optimizers import Optimizer, SGD, Adam
+from tensorflow.keras import backend
+
 
 class HookNet(Model):
 
@@ -18,29 +32,31 @@ class HookNet(Model):
     ----------
 
     input_shape: List[int]
-        the input shape of the model 
+        the input shape of the model
 
     output_shape: List[int]
-        the output shape of the model before flattening. 
+        the output shape of the model before flattening.
 
     """
 
-    def __init__(self, 
-                 input_shape: List[int],
-                 n_classes: int,
-                 hook_indexes: List[int],
-                 depth: int = 4,
-                 n_convs: int = 2,
-                 filter_size: int = 3,
-                 n_filters: int = 64,
-                 padding: str = 'valid',
-                 batch_norm: bool = True,
-                 activation: str = 'relu',
-                 learning_rate: float = 0.000005,
-                 opt_name: str = 'adam',
-                 l2_lambda: float = 0.001,
-                 loss_weights: List[float] = [1.0, 0.0],
-                 merge_type: str = 'concat') -> None:
+    def __init__(
+        self,
+        input_shape: List[int],
+        n_classes: int,
+        hook_indexes: List[int],
+        depth: int = 4,
+        n_convs: int = 2,
+        filter_size: int = 3,
+        n_filters: int = 64,
+        padding: str = "valid",
+        batch_norm: bool = True,
+        activation: str = "relu",
+        learning_rate: float = 0.000005,
+        opt_name: str = "adam",
+        l2_lambda: float = 0.001,
+        loss_weights: List[float] = [1.0, 0.0],
+        merge_type: str = "concat",
+    ) -> None:
 
         """
         Parameters
@@ -56,7 +72,7 @@ class HookNet(Model):
 
         depth: int
             the depth of the encoder-decoder branches
-        
+
         n_convs: int
             the number of 2D convolutions per convolutional block
 
@@ -65,35 +81,35 @@ class HookNet(Model):
 
         n_filters: intv
             the number of starting filters (will be increased and decreased by a factor 2 in each conv block in the encoders and decoders, respectively)
-            
+
         padding: str
             padding type in 2D convolution (either 'same' or 'valid')
-        
+
         batch_norm: bool
             boolean for using batch normalization
 
         activation: str
             activation function after 2D convolution
-        
+
         learning_rate: float
             learning rate of the optimizer
 
         opt_name: str
             optimizer name (either 'sgd' or 'adam')
-        
+
         l2_lambda: float
-            l2 value for regulizer 
-        
+            l2 value for regulizer
+
         loss_weights: bool
             loss contribution for each branch
-        
+
         merge_type: str
             method used for combining feature maps (either 'concat', 'add', 'subtract', 'multiply')
         """
         super().__init__()
         self._input_shape = input_shape
         self._n_classes = n_classes
-        self._hook_indexes = {(depth-1)-hook_indexes[0]: hook_indexes[1]}
+        self._hook_indexes = {(depth - 1) - hook_indexes[0]: hook_indexes[1]}
         self._depth = depth
         self._n_convs = n_convs
         self._filter_size = filter_size
@@ -126,7 +142,7 @@ class HookNet(Model):
         return self._input_shape
 
     @property
-    def output_shape(self) ->  List[int]:
+    def output_shape(self) -> List[int]:
         """Return the output shape of the model before flattening"""
 
         return self._output_shape
@@ -141,13 +157,17 @@ class HookNet(Model):
         input_2 = Input(self._input_shape)
 
         # construction of context branch and context hooks
-        flatten2, context_hooks = self._construct_branch(input_2, reshape_name='reshape_context')
+        flatten2, context_hooks = self._construct_branch(
+            input_2, reshape_name="reshape_context"
+        )
 
         # declaration of target inpput
         input_1 = Input(self._input_shape)
 
         # construction of target branch with context hooks
-        flatten1, _ = self._construct_branch(input_1, context_hooks, reshape_name='reshape_target')
+        flatten1, _ = self._construct_branch(
+            input_1, context_hooks, reshape_name="reshape_target"
+        )
 
         # create single/multi loss model
         if self._multi_loss:
@@ -155,22 +175,21 @@ class HookNet(Model):
         else:
             self._create_model([input_1, input_2], flatten1)
 
-    def _construct_branch(self,
-                          input: Input,
-                          in_hooks: Dict = {},
-                          reshape_name: str = 'reshape_target') -> Tuple[Tensor, Dict]:
+    def _construct_branch(
+        self, input: Input, in_hooks: Dict = {}, reshape_name: str = "reshape_target"
+    ) -> Tuple[Tensor, Dict]:
         """
         Construction of single branch
-        
+
         Parameters
         ----------
-        input : Input 
+        input : Input
             keras Input Tensor
         in_hooks : Dict
             A mapping for hooking from the context branch to the target branch
         reshape_name: str
-            name for Reshape Tensor 
-        
+            name for Reshape Tensor
+
 
         Returns
         -------
@@ -185,29 +204,29 @@ class HookNet(Model):
 
         # encode and retreive residuals
         net, residuals = self._encode_path(net)
-        
-        # mid conv block    
+
+        # mid conv block
         net = self._conv_block(net, self._n_filters * 2 * (self._depth + 1))
 
         # decode and retreive hooks
         net, out_hooks = self._decode_path(net, residuals, in_hooks)
-        
-        # softmax output    
-        net = Conv2D(self._n_classes, 1, activation='softmax')(net)
+
+        # softmax output
+        net = Conv2D(self._n_classes, 1, activation="softmax")(net)
 
         # set output shape
         self._output_shape = int_shape(net)[1:]
 
         # Reshape net
-        flatten = Reshape((self.output_shape[0] * self.output_shape[1], self.output_shape[2]), name=reshape_name)(net)
+        flatten = Reshape(
+            (self.output_shape[0] * self.output_shape[1], self.output_shape[2]),
+            name=reshape_name,
+        )(net)
 
         # return flatten output and hooks
         return flatten, out_hooks
 
-
-    def _create_model(self, 
-                      inputs : List[Input],
-                      outputs : List[Tensor]) -> None:
+    def _create_model(self, inputs: List[Input], outputs: List[Tensor]) -> None:
         """
         Creation of model
 
@@ -223,13 +242,32 @@ class HookNet(Model):
         # initilization of keras model
         super().__init__(inputs, outputs)
 
-        # set losses and loss weigths 
-        losses = {'reshape_target': 'categorical_crossentropy', 'reshape_context': 'categorical_crossentropy'} if self._multi_loss else {'reshape_target': 'categorical_crossentropy'}
-        loss_weights = {'reshape_target': self._loss_weights[0], 'reshape_context': self._loss_weights[1]} if self._multi_loss else {'reshape_target': self._loss_weights[0]}
-       
+        # set losses and loss weigths
+        losses = (
+            {
+                "reshape_target": "categorical_crossentropy",
+                "reshape_context": "categorical_crossentropy",
+            }
+            if self._multi_loss
+            else {"reshape_target": "categorical_crossentropy"}
+        )
+        loss_weights = (
+            {
+                "reshape_target": self._loss_weights[0],
+                "reshape_context": self._loss_weights[1],
+            }
+            if self._multi_loss
+            else {"reshape_target": self._loss_weights[0]}
+        )
+
         # compile model
-        self.compile(optimizer=self._opt(), loss=losses, loss_weights=loss_weights, metrics=['accuracy'])
-    
+        self.compile(
+            optimizer=self._opt(),
+            loss=losses,
+            loss_weights=loss_weights,
+            metrics=["accuracy"],
+        )
+
     def _opt(self) -> Optimizer:
         """
         Set optimizer
@@ -244,28 +282,28 @@ class HookNet(Model):
         ValueError: unsupported optimizer
 
         """
-        
+
         # Set Gradient-descent optimizer
-        if self._opt_name == 'sgd':
+        if self._opt_name == "sgd":
             return SGD(lr=self._learning_rate)
 
         # Set Adam optimizer
-        if self._opt_name == 'adam' :
+        if self._opt_name == "adam":
             return Adam(lr=self._learning_rate)
 
-        raise ValueError(f'unsupported optimizer name: {self._opt_name}')
+        raise ValueError(f"unsupported optimizer name: {self._opt_name}")
 
     def _encode_path(self, net) -> Tuple[Tensor, List[Tensor]]:
         """
         Encoder
-        
+
         Parameters
         ----------
 
         net: Tensor
             current Tensor in the model
 
-        
+
         Returns
         -------
         net: Tensor
@@ -285,22 +323,19 @@ class HookNet(Model):
         for b in range(self._depth):
             # apply convblock
             net = self._conv_block(net, n_filters)
-            
+
             # keep Tensor for residual/sip connection
             residuals.append(net)
-            
+
             # downsample
             net = self._downsample(net)
 
-            #increase number of filters with factor 2
+            # increase number of filters with factor 2
             n_filters *= 2
 
         return net, residuals
 
-    def _decode_path(self,
-                     net : Tensor, 
-                     residuals : List,
-                     inhooks : Dict = {}) -> Tensor:
+    def _decode_path(self, net: Tensor, residuals: List, inhooks: Dict = {}) -> Tensor:
         """
         Decoder
 
@@ -321,12 +356,12 @@ class HookNet(Model):
             mapping between index and Tensor in model for hooking between branches
 
         """
-        
+
         # list for keeping potential hook Tensors
-        outhooks = []        
+        outhooks = []
 
         # set start number of filters of decoder
-        n_filters = self._n_filters * 2 * self._depth 
+        n_filters = self._n_filters * 2 * self._depth
 
         # loop through depth in reverse
         for b in reversed(range(self._depth)):
@@ -334,7 +369,7 @@ class HookNet(Model):
             # hook if hook is available
             if b in inhooks:
                 # combine feature maps via merge type
-                if self._merge_type == 'concat':
+                if self._merge_type == "concat":
                     net = self._concatenator(net, inhooks[b])
                 else:
                     net = self._merger(net, inhooks[b])
@@ -347,19 +382,19 @@ class HookNet(Model):
 
             # apply conv block
             net = self._conv_block(net, n_filters)
-            
+
             # set potential hook
             outhooks.append(net)
-            
+
             n_filters = n_filters // 2
 
         # get hooks from potential hooks
         hooks = {}
-        for shook, ehook in self._hook_indexes.items():            
-            hooks[ehook] = outhooks[shook] 
+        for shook, ehook in self._hook_indexes.items():
+            hooks[ehook] = outhooks[shook]
 
         print(type(net))
-        return net, hooks 
+        return net, hooks
 
     def _conv_block(self, net: Tensor, n_filters: int, kernel_size: int = 3) -> Tensor:
         """
@@ -374,8 +409,8 @@ class HookNet(Model):
             current number of filters
         kernel_size: int:
             size of filter in 2d convolution
-        
-        
+
+
         Returns
         -------
 
@@ -386,12 +421,14 @@ class HookNet(Model):
         # loop through number of convolutions in convolution block
         for n in range(self._n_convs):
             # apply 2D convolution
-            net = Conv2D(n_filters,
-                         kernel_size,
-                         activation=self._activation,
-                         kernel_initializer='he_normal',
-                         padding=self._padding,
-                         kernel_regularizer=self._l2)(net)
+            net = Conv2D(
+                n_filters,
+                kernel_size,
+                activation=self._activation,
+                kernel_initializer="he_normal",
+                padding=self._padding,
+                kernel_regularizer=self._l2,
+            )(net)
 
             # apply batch normalization
             if self._batch_norm:
@@ -408,11 +445,13 @@ class HookNet(Model):
         """Upsamplign via nearest neightbour interpolation and additional convolution"""
 
         net = UpSampling2D(size=(2, 2))(net)
-        net = Conv2D(n_filters,
-                     self._filter_size,
-                     activation=self._activation,
-                     padding=self._padding,
-                     kernel_regularizer=self._l2)(net)
+        net = Conv2D(
+            n_filters,
+            self._filter_size,
+            activation=self._activation,
+            padding=self._padding,
+            kernel_regularizer=self._l2,
+        )(net)
 
         return net
 
@@ -424,7 +463,7 @@ class HookNet(Model):
         item_cropped = Cropping2D(int(crop_size))(item)
 
         return concatenate([item_cropped, net], axis=3)
-    
+
     def _merger(self, net: Tensor, item: Tensor) -> Tensor:
         """"Combine feature maps"""
 
@@ -434,20 +473,19 @@ class HookNet(Model):
 
         # adapt number of filters via 1x1 convolutional to allow merge
         current_filters = int(net.shape[-1])
-        item_cropped = Conv2D(current_filters,
-                     1,
-                     activation=self._activation,
-                     padding=self._padding)(item_cropped)
+        item_cropped = Conv2D(
+            current_filters, 1, activation=self._activation, padding=self._padding
+        )(item_cropped)
 
         # Combine feature maps by adding
-        if self._merge_type == 'add':
+        if self._merge_type == "add":
             return Add()([item_cropped, net])
         # Combine feature maps by subtracting
-        if self._merge_type == 'subtract':
+        if self._merge_type == "subtract":
             return Subtract()([item_cropped, net])
         # Combine feature maps by multiplication
-        if self._merge_type == 'multiply':
+        if self._merge_type == "multiply":
             return Multiply()([item_cropped, net])
-        
+
         # Raise ValueError if merge type is unsupported
-        raise ValueError(f'unsupported merge type: {self._merge_type}')
+        raise ValueError(f"unsupported merge type: {self._merge_type}")
