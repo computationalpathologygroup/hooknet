@@ -1,6 +1,7 @@
 ## data:
 image_path: "./data" # path to data folder
 mask_path: "./output" # path were output will be saved (e.g, the weights of the model)
+weights_path: ""
 output_path: "./"
 mask_ratio: 0
 
