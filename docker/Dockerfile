@@ -29,3 +29,5 @@ RUN rm hooknet.zip
 COPY ./requirements.txt /tmp/
 RUN pip install --requirement /tmp/requirements.txt
 COPY . /tmp/
+
+WORKDIR /usr/local/lib/python3.6/dist-packages/hooknet
