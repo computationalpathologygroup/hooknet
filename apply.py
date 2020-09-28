@@ -3,7 +3,7 @@ import os.path
 import pathlib
 import shutil
 
-from argconfigparser import ArgumentConfigParser
+from argconfigparser.argconfigparser import ArgumentConfigParser
 from source.inference import Inference
 from source.model import HookNet
 
@@ -45,29 +45,31 @@ hooknet = HookNet(
 # load weights
 hooknet.load_weights(config["weights_path"])
 
-true_image_path = config["image_path"]
-true_mask_path = config["mask_path"]
-true_output_path = config["output_path"]
+image_path = config["image_path"]
+mask_path = config["mask_path"]
+output_path = config["output_path"]
 
-print("image_path:", true_image_path)
-print("mask_path:", true_mask_path)
-print("output_path:", true_output_path)
+print("image_path:", image_path)
+print("mask_path:", mask_path)
+print("output_path:", output_path)
 
+if config["copy"] and "work_dir" in config:
+    print("copy to local folder...")
+    shutil.copy2(image_path, config["work_dir"])
 
-print("copy to local folder...")
-shutil.copy2(true_image_path, config["work_dir"])
-if true_mask_path:
-    shutil.copy2(true_mask_path, config["work_dir"])
+    if mask_path:
+        shutil.copy2(mask_path, config["work_dir"])
 
-image_path = os.path.join(config["work_dir"], os.path.basename(true_image_path))
-mask_path = (
-    os.path.join(config["work_dir"], os.path.basename(true_mask_path))
-    if true_mask_path
-    else true_mask_path
-)
-output_path = os.path.join(
-    config["work_dir"], os.path.basename(true_image_path).replace(".", "_hooknet.")
-)
+    image_path = os.path.join(config["work_dir"], os.path.basename(image_path))
+
+    mask_path = (
+        os.path.join(config["work_dir"], os.path.basename(mask_path))
+        if mask_path
+        else mask_path
+    )
+    output_path = os.path.join(
+        config["work_dir"], os.path.basename(image_path).replace(".", "_hooknet.")
+    )
 
 print("apply hooknet...")
 apply = Inference(
@@ -86,6 +88,7 @@ apply = Inference(
 )
 apply.start()
 
-print("copy result...")
-shutil.copy2(output_path, true_output_path)
-print("done.")
+if config["copy"] and "work_dir" in config:
+    print("copy result...")
+    shutil.copy2(output_path, config["output_path"])
+    print("done.")

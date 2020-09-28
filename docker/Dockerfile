@@ -26,6 +26,6 @@ RUN rm hooknet.zip
 
 
 # Install  requirements
-COPY ../requirements.txt /tmp/
+COPY ./requirements.txt /tmp/
 RUN pip install --requirement /tmp/requirements.txt
 COPY . /tmp/
