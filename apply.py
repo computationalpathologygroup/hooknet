@@ -16,7 +16,7 @@ def is_valid_file(parser, arg):
 
 
 config = ArgumentConfigParser(
-    os.path.join(pathlib.Path(__name__).parent, "apply_parameters.yml")
+    os.path.join(pathlib.Path(__file__).parent, "apply_parameters.yml")
 ).parse_args()
 
 print(config)
