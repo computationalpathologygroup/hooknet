@@ -20,19 +20,23 @@ class Inference:
     """
     Inference class
     """
-    def __init__(self,
-                 wsi_path,
-                 mask_path,
-                 output_path,
-                 input_shape,
-                 output_shape,
-                 resolutions,
-                 batch_size,
-                 cpus,
-                 queue_size,
-                 model_instance,
-                 multi_loss=False):
-        
+
+    def __init__(
+        self,
+        wsi_path,
+        mask_path,
+        output_path,
+        input_shape,
+        output_shape,
+        resolutions,
+        batch_size,
+        cpus,
+        queue_size,
+        model_instance,
+        multi_loss,
+        mask_ratio,
+    ):
+
         self._wsi_path = wsi_path
         self._mask_path = mask_path
         self._output_path = output_path
@@ -43,6 +47,7 @@ class Inference:
         self._cpus = cpus
         self._queue_size = queue_size
         self._multi_loss = multi_loss
+        self._mask_ratio = mask_ratio
 
         self._batch_size = batch_size
 
@@ -54,43 +59,50 @@ class Inference:
         self._writer_queue = None
 
         # Create batch deamon proces
-        self._readerdeamon = WSIReaderDeamon(self._wsi_path,
-                                             self._mask_path,
-                                             self._batch_size,
-                                             self._input_shape,
-                                             self._output_shape,
-                                             self._tile_size,
-                                             self._resolutions,
-                                             self._queue_size,
-                                             self._cpus,
-                                             self._reader_queue)
+        self._readerdeamon = WSIReaderDeamon(
+            self._wsi_path,
+            self._mask_path,
+            self._batch_size,
+            self._input_shape,
+            self._output_shape,
+            self._tile_size,
+            self._resolutions,
+            self._queue_size,
+            self._cpus,
+            self._reader_queue,
+            self._mask_ratio,
+        )
         # Create batch deamon process
-        self._writerdeamon = WSIWriterDeamon(self._wsi_path,
-                                             self._output_path,
-                                             self._resolutions[0],
-                                             self._output_shape,
-                                             self._tile_size,
-                                             self._writer_queue) 
+        self._writerdeamon = WSIWriterDeamon(
+            self._wsi_path,
+            self._output_path,
+            self._resolutions[0],
+            self._output_shape,
+            self._tile_size,
+            self._writer_queue,
+        )
 
     def _post_process(self, predictions):
-        return [np.argmax(prediction, -1).astype('uint8')+1 for prediction in predictions]
+        return [
+            np.argmax(prediction, -1).astype("uint8") + 1 for prediction in predictions
+        ]
 
     def _test_on_wsi(self):
         index = 0
         t1_read = time.time()
-        for data in iter(self._reader_queue.get, 'STOP'):
-            X_batch, items = data 
+        for data in iter(self._reader_queue.get, "STOP"):
+            X_batch, items = data
             X_batch = normalize(X_batch)
             pred = self._model_instance.predict_on_batch(x=X_batch)
-            
-            if self._multi_loss: 
+
+            if self._multi_loss:
                 predictions = self._post_process(pred[0])
             else:
                 predictions = self._post_process(pred)
-                
+
             self._writerdeamon.put((predictions, items))
-      
-            print(f'{index} tiles processed')
+
+            print(f"{index} tiles processed")
             index += 1
 
     def start(self):
