@@ -23,3 +23,9 @@ ADD ${hooknet} hooknet.zip
 RUN unzip hooknet.zip -d /usr/local/lib/python3.6/dist-packages/
 RUN mv /usr/local/lib/python3.6/dist-packages/hooknet-master /usr/local/lib/python3.6/dist-packages/hooknet
 RUN rm hooknet.zip
+
+
+# Install  requirements
+COPY ../requirements.txt /tmp/
+RUN pip install --requirement /tmp/requirements.txt
+COPY . /tmp/
