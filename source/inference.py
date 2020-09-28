@@ -53,7 +53,7 @@ class Inference:
         self._batch_size = batch_size
 
         self._model_instance = model_instance
-        self._graph = tf.get_default_graph()
+        # self._graph = tf.get_default_graph()
 
         # queues
         self._reader_queue = Queue(maxsize=self._queue_size)
@@ -109,8 +109,8 @@ class Inference:
     def start(self):
         # start reader
         self._readerdeamon.start()
-        with self._graph.as_default():
-            self._test_on_wsi()
+        # with self._graph.as_default():
+        self._test_on_wsi()
         self.stop()
 
     def stop(self):

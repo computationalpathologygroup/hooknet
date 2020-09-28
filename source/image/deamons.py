@@ -49,7 +49,7 @@ class ImageProcessor(Process):
         self._reader_queue = reader_queue
 
         self._wsi_ratio = 1
-        self._mask_ratio = 0 if mask_ratio is None else mask_ratio
+        self._mask_ratio = 0 if mask_ratio is None else int(mask_ratio)
         self._mask_spacing = -1
         if self._mask_path:
             if self._mask_path.endswith(".png"):
@@ -132,10 +132,14 @@ class ImageProcessor(Process):
             )
 
             # get patch
-            mask_patch = self._mask[
-                mask_y : mask_y + self._input_shape[1] // self._mask_ratio,
-                mask_x : mask_x + self._input_shape[0] // self._mask_ratio,
-                :,
+            mask_patch = [
+                self._mask[
+                    int(mask_y) : int(mask_y)
+                    + int(self._input_shape[1] // self._mask_ratio),
+                    int(mask_x) : int(mask_x)
+                    + int(self._input_shape[0] // self._mask_ratio),
+                    :,
+                ]
             ]
 
         else:
