@@ -4,9 +4,8 @@ from threading import Thread
 from collections import deque
 
 import numpy as np
-
-# import tensorflow as tf
-# from tensorflow.keras import backend
+import tensorflow as tf
+from tensorflow.keras import backend
 from multiprocessing import Queue
 from .image.deamons import WSIReaderDeamon, WSIWriterDeamon
 
@@ -91,17 +90,18 @@ class Inference:
 
     def _test_on_wsi(self):
         index = 0
+        t1_read = time.time()
         for data in iter(self._reader_queue.get, "STOP"):
             X_batch, items = data
             X_batch = normalize(X_batch)
-            # pred = self._model_instance.predict_on_batch(x=X_batch)
+            pred = self._model_instance.predict_on_batch(x=X_batch)
 
-            # if self._multi_loss:
-            #     predictions = self._post_process(pred[0])
-            # else:
-            #     predictions = self._post_process(pred)
+            if self._multi_loss:
+                predictions = self._post_process(pred[0])
+            else:
+                predictions = self._post_process(pred)
 
-            # self._writerdeamon.put((predictions, items))
+            self._writerdeamon.put((predictions, items))
 
             print(f"{index} tiles processed")
             index += 1
