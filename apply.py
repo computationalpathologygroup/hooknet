@@ -21,6 +21,7 @@ config = ArgumentConfigParser(
     os.path.join(pathlib.Path(__file__).parent, "apply_parameters.yml")
 ).parse_args()
 
+print("CONFIG")
 print(config)
 
 

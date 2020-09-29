@@ -91,7 +91,6 @@ class Inference:
 
     def _test_on_wsi(self):
         index = 0
-        t1_read = time.time()
         for data in iter(self._reader_queue.get, "STOP"):
             X_batch, items = data
             X_batch = normalize(X_batch)

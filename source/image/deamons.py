@@ -84,6 +84,7 @@ class ImageProcessor(Process):
             center_y = row + (self._output_shape[1] // 2)
 
             if not self._check_mask(center_x, center_y):
+                print("NO tissue tile")
                 continue
 
             for ps_index, pixel_spacing in enumerate(self._resolutions):
