@@ -121,7 +121,7 @@ mask = cv2.imread(mask_path)
 mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY) / 255
 patch = img_reader.content(spacing)
 unique, counts = np.unique(patch, return_counts=True)
-score = dict(zip(unique, counts))
+score = dict(list(zip(map(int, unique), map(int, counts))))
 output_dict = {
     "image_path": config["image_path"],
     "mask_path": config["mask_path"],
