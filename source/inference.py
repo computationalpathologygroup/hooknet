@@ -26,7 +26,7 @@ class Inference:
         self,
         wsi_path,
         mask_path,
-        output_path,
+        output_file,
         input_shape,
         output_shape,
         resolutions,
@@ -40,7 +40,7 @@ class Inference:
 
         self._wsi_path = wsi_path
         self._mask_path = mask_path
-        self._output_path = output_path
+        self._output_file = output_file
         self._input_shape = input_shape
         self._output_shape = output_shape
         self._tile_size = output_shape[0] - (output_shape[0] % 64)
@@ -76,7 +76,7 @@ class Inference:
         # Create batch deamon process
         self._writerdeamon = WSIWriterDeamon(
             self._wsi_path,
-            self._output_path,
+            self._output_file,
             self._resolutions[0],
             self._output_shape,
             self._tile_size,

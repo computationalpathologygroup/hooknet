@@ -1,9 +1,15 @@
+import math
 import os
 import os.path
 import pathlib
 import shutil
 
+import cv2
+import numpy as np
+import yaml
+
 from argconfigparser.argconfigparser import ArgumentConfigParser
+from source.image.imagereader import ImageReader
 from source.inference import Inference
 from source.model import HookNet
 
@@ -49,9 +55,18 @@ image_path = config["image_path"]
 mask_path = config["mask_path"]
 output_path = config["output_path"]
 
+output_file = (
+    os.path.join(output_path, os.path.splitext(os.path.basename(image_path))[0])
+    + "_hooknet.tif"
+)
+
+
+prediction_path = output_file
+
 print("image_path:", image_path)
 print("mask_path:", mask_path)
 print("output_path:", output_path)
+
 
 if config["copy"] and "work_dir" in config:
     print("copy to local folder...")
@@ -67,15 +82,19 @@ if config["copy"] and "work_dir" in config:
         if mask_path
         else mask_path
     )
-    output_path = os.path.join(
-        config["work_dir"], os.path.basename(image_path).replace(".", "_hooknet.")
+
+    output_file = (
+        os.path.join(
+            config["work_dir"], os.path.splitext(os.path.basename(image_path))[0]
+        )
+        + "_hooknet.tif"
     )
 
 print("apply hooknet...")
 apply = Inference(
     wsi_path=config["image_path"],
     mask_path=config["mask_path"],
-    output_path=config["output_path"],
+    output_file=output_file,
     input_shape=config["input_shape"],
     output_shape=hooknet.output_shape,
     resolutions=config["resolutions"],
@@ -90,5 +109,32 @@ apply.start()
 
 if config["copy"] and "work_dir" in config:
     print("copy result...")
-    shutil.copy2(output_path, config["output_path"])
+    shutil.copy2(output_file, config["output_path"])
     print("done.")
+
+print("Calculating score..")
+
+img_reader = ImageReader(output_file, 0.2)
+ratio = 32
+spacing = img_reader.spacings[0] * 2 ** math.log(ratio, 2)
+mask = cv2.imread(mask_path)
+mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY) / 255
+patch = img_reader.content(spacing)
+unique, counts = np.unique(patch, return_counts=True)
+score = dict(zip(unique, counts))
+output_dict = {
+    "image_path": config["image_path"],
+    "mask_path": config["mask_path"],
+    "prediction_path": prediction_path,
+    "score": score,
+}
+
+yaml_output_file = output_file = (
+    os.path.join(
+        config["output_path"], os.path.splitext(os.path.basename(image_path))[0]
+    )
+    + "_output.yml"
+)
+
+with open(yaml_output_file, "w") as outfile:
+    yaml.dump(output_dict, outfile, default_flow_style=False)
