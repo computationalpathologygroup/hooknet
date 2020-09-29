@@ -5,7 +5,8 @@ import shutil
 
 from argconfigparser.argconfigparser import ArgumentConfigParser
 
-# from source.inference import Inference
+from source.inference import Inference
+
 # from source.model import HookNet
 
 
