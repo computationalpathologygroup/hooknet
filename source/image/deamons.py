@@ -54,7 +54,7 @@ class ImageProcessor(Process):
         self._mask_spacing = -1
         if self._mask_path:
             if self._mask_path.endswith(".png"):
-                self._mask = cv2.imread(self._mask_path) / 255
+                self._mask = cv2.imread(self._mask_path, cv2.IMREAD_GRAYSCALE) / 255
             else:
                 self._mask = ImageReader(self._mask_path, 0.2)
 
@@ -158,7 +158,10 @@ class ImageProcessor(Process):
         if 1 in np.unique(mask_patch[0]):
             # upsample
             return True, rescale(
-                mask_patch[0].astype("uint8"), 4, order=0, preserve_range=True
+                mask_patch[0].astype("uint8"),
+                self._mask_ratio,
+                order=0,
+                preserve_range=True,
             )
         return False, []
 
