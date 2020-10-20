@@ -142,7 +142,6 @@ class ImageProcessor(Process):
                     + int(self._input_shape[1] // self._mask_ratio),
                     int(mask_x) : int(mask_x)
                     + int(self._input_shape[0] // self._mask_ratio),
-                    :,
                 ]
             ]
 
