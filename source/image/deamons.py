@@ -85,8 +85,8 @@ class ImageProcessor(Process):
             center_x = col + (self._output_shape[0] // 2)
             center_y = row + (self._output_shape[1] // 2)
 
-            mask = self._check_mask(center_x, center_y)
-            if not mask:
+            mask_bool, mask = self._check_mask(center_x, center_y)
+            if not mask_bool:
                 continue
             masks.append(mask)
 
@@ -118,7 +118,7 @@ class ImageProcessor(Process):
     def _check_mask(self, centerx, centery):
 
         if not self._mask_path:
-            return True
+            return True, []
 
         if self._mask_path.endswith(".png"):
             # get level 0 coordinates
@@ -157,10 +157,10 @@ class ImageProcessor(Process):
 
         if 1 in np.unique(mask_patch[0]):
             # upsample
-            return rescale(
+            return True, rescale(
                 mask_patch[0].astype("uint8"), 4, order=0, preserve_range=True
             )
-        return []
+        return False, []
 
     def _create_patch(self, centerx, centery, pixel_spacing):
         patch, _, _ = self._wsi.read_center(
