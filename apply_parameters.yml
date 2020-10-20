@@ -30,3 +30,4 @@ batch_size: 1
 # system
 queue_size: 10
 cpus: 6
+calc_score: True

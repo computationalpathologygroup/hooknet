@@ -7,6 +7,7 @@ import shutil
 import cv2
 import numpy as np
 import yaml
+import json
 
 from argconfigparser.argconfigparser import ArgumentConfigParser
 from source.image.imagereader import ImageReader
@@ -112,29 +113,35 @@ if config["copy"] and "work_dir" in config:
     shutil.copy2(output_file, config["output_path"])
     print("done.")
 
-print("Calculating score..")
+if config["calc_score"]:
+    print("Calculating score..")
+    img_reader = ImageReader(output_file, 0.2)
+    ratio = 32
+    spacing = img_reader.spacings[0] * 2 ** math.log(ratio, 2)
+    mask = cv2.imread(mask_path)
+    mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY) / 255
+    patch = img_reader.content(spacing)
+    unique, counts = np.unique(patch, return_counts=True)
+    score = dict(list(zip(map(int, unique), map(int, counts))))
 
-img_reader = ImageReader(output_file, 0.2)
-ratio = 32
-spacing = img_reader.spacings[0] * 2 ** math.log(ratio, 2)
-mask = cv2.imread(mask_path)
-mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY) / 255
-patch = img_reader.content(spacing)
-unique, counts = np.unique(patch, return_counts=True)
-score = dict(list(zip(map(int, unique), map(int, counts))))
-output_dict = {
-    "image_path": config["image_path"],
-    "mask_path": config["mask_path"],
-    "prediction_path": prediction_path,
-    "score": score,
-}
+    output = {
+        "image_path": config["image_path"],
+        "mask_path": config["mask_path"],
+        "prediction_path": prediction_path,
+        "score": score,
+    }
 
-yaml_output_file = output_file = (
-    os.path.join(
-        config["output_path"], os.path.splitext(os.path.basename(image_path))[0]
-    )
-    + "_output.yml"
-)
+else:
+    output = [
+        (
+            {
+                "entity": config["image_path"],
+                "output": f"filepath:images/{os.path.basename(prediction_path)}",
+                "error_messages": [],
+                "metrics": {"f1": "N/A"},
+            }
+        )
+    ]
 
-with open(yaml_output_file, "w") as outfile:
-    yaml.dump(output_dict, outfile, default_flow_style=False)
+with open("/home/user/results.json", "w") as file:
+    json.dump(output, file)
