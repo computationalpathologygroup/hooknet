@@ -175,7 +175,7 @@ class ImageProcessor(Process):
         if 1 in np.unique(mask_patch[0]):
             # upsample
             return True, rescale(
-                mask_patch[0].astype("uint8"),
+                mask_patch[0].squeeze().astype("uint8"),
                 self._mask_ratio,
                 order=0,
                 preserve_range=True,
