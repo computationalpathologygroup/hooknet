@@ -4,6 +4,7 @@ from .imagewriter import ImageWriter
 import numpy as np
 import time
 import cv2
+from skimage.transform import rescale
 
 
 class MaskReader:
@@ -67,10 +68,10 @@ class ImageProcessor(Process):
             items = command_message
             # print('items', items)
             # create batch
-            X_batch, used_items = self._create_batch(items)
+            X_batch, masks, used_items = self._create_batch(items)
             if used_items != []:
                 # put batch in de reader queue
-                self._reader_queue.put((X_batch, used_items))
+                self._reader_queue.put((X_batch, masks, used_items))
 
         self._wsi.close()
         del self._wsi
@@ -78,19 +79,22 @@ class ImageProcessor(Process):
     def _create_batch(self, items):
         X_batch = [[] for pixel_spacing in self._resolutions]
         used_items = []
+        masks = []
         for item in items:
             col, row = item
             center_x = col + (self._output_shape[0] // 2)
             center_y = row + (self._output_shape[1] // 2)
 
-            if not self._check_mask(center_x, center_y):
+            mask = self._check_mask(center_x, center_y)
+            if not mask:
                 continue
+            masks.append(mask)
 
             for ps_index, pixel_spacing in enumerate(self._resolutions):
                 patch = self._create_patch(center_x, center_y, pixel_spacing)
                 X_batch[ps_index].append(patch)
                 used_items.append(item)
-        return X_batch, used_items
+        return X_batch, masks, used_items
 
     def _set_ratios(self):
         possible_spacings = np.array([1 / (2 ** x) for x in range(4, -8, -1)])
@@ -107,7 +111,7 @@ class ImageProcessor(Process):
                 for im_spacing in self._mask.spacings
             ]
             self._mask_spacing = max(self._mask.spacings[0], self._resolutions[0])
-            self._mask_ratio = self._resolutions[0] / rounded_mask_spacings[0]
+            self._mask_ratio = rounded_mask_spacings[0] / self._resolutions[0]
 
         print("MASK RATIO:", self._mask_ratio)
 
@@ -144,13 +148,19 @@ class ImageProcessor(Process):
 
         else:
             mask_patch = self._mask.read_center(
-                centerx * self._mask_ratio,
-                centery * self._mask_ratio,
+                centerx // self._mask_ratio,
+                centery // self._mask_ratio,
                 int(self._input_shape[0]),
                 int(self._input_shape[1]),
                 self._mask_spacing,
             )
-        return 1 in np.unique(mask_patch[0])
+
+        if 1 in np.unique(mask_patch[0]):
+            # upsample
+            return rescale(
+                mask_patch[0].astype("uint8"), 4, order=0, preserve_range=True
+            )
+        return []
 
     def _create_patch(self, centerx, centery, pixel_spacing):
         patch, _, _ = self._wsi.read_center(

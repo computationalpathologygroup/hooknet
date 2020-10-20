@@ -92,7 +92,7 @@ class Inference:
         index = 0
         t1_read = time.time()
         for data in iter(self._reader_queue.get, "STOP"):
-            X_batch, items = data
+            X_batch, masks, items = data
             X_batch = normalize(X_batch)
             pred = self._model_instance.predict_on_batch(x=X_batch)
 
@@ -101,7 +101,11 @@ class Inference:
             else:
                 predictions = self._post_process(pred)
 
-            self._writerdeamon.put((predictions, items))
+            masked_predictions = []
+            for prediction, mask in zip(predictions, masks):
+                masked_predictions.append(prediction * mask)
+
+            self._writerdeamon.put((masked_predictions, items))
 
             print(f"{index} tiles processed")
             index += 1
