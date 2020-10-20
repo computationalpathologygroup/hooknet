@@ -101,11 +101,7 @@ class Inference:
             else:
                 predictions = self._post_process(pred)
 
-            masked_predictions = []
-            for prediction, mask in zip(predictions, masks):
-                masked_predictions.append(prediction * mask)
-
-            self._writerdeamon.put((masked_predictions, items))
+            self._writerdeamon.put((predictions, masks, items))
 
             print(f"{index} tiles processed")
             index += 1

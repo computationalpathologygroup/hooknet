@@ -7,6 +7,24 @@ import cv2
 from skimage.transform import rescale
 
 
+def fit_data(data, output_shape):
+    cropx = (data.shape[0] - output_shape[0]) // 2
+    cropy = (data.shape[1] - output_shape[1]) // 2
+
+    if len(data.shape) == 2:
+        return data[cropx:-cropx, cropy:-cropy]
+    if len(data.shape) == 3:
+        return data[cropx:-cropx, cropy:-cropy, :]
+    if len(data.shape) == 4:
+        cropx = (data.shape[1] - output_shape[0]) // 2
+        cropy = (data.shape[2] - output_shape[1]) // 2
+        return data[:, cropx:-cropx, cropy:-cropy, :]
+    if len(data.shape) == 5:
+        cropx = (data.shape[2] - output_shape[0]) // 2
+        cropy = (data.shape[3] - output_shape[1]) // 2
+        return data[:, :, cropx:-cropx, cropy:-cropy, :]
+
+
 class MaskReader:
     def __init__(self, mask_path):
         self._mask_path = mask_path
@@ -305,15 +323,19 @@ class WSIWriterDeamon:
 
     def put(self, write_message):
         # for write_message in iter(self._writer_queue.get, 'STOP'):
-        predictions, items = write_message
+        predictions, masks, items = write_message
         t1 = time.time()
         for idx, prediction in enumerate(predictions):
             col, row = items[idx]
             prediction = prediction.reshape(
                 (self._output_shape[0], self._output_shape[1])
             )
+            prediction = prediction[: self._tile_size, : self._tile_size]
+            mask = fit_data(masks[idx], self._tile_size)
+            prediction *= mask
+
             self._writer._ImageWriter__writer.writeBaseImagePartToLocation(
-                prediction[: self._tile_size, : self._tile_size].flatten(), col, row
+                prediction.flatten(), col, row
             )
         t2 = time.time()
 
