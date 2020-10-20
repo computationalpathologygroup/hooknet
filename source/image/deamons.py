@@ -331,7 +331,7 @@ class WSIWriterDeamon:
                 (self._output_shape[0], self._output_shape[1])
             )
             prediction = prediction[: self._tile_size, : self._tile_size]
-            mask = fit_data(masks[idx], self._tile_size)
+            mask = fit_data(masks[idx], [self._tile_size, self._tile_size])
             prediction *= mask
 
             self._writer._ImageWriter__writer.writeBaseImagePartToLocation(
