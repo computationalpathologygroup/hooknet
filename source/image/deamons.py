@@ -301,6 +301,7 @@ class WSIWriterDeamon:
         # get shape of image
         wsi = ImageReader(self._wsi_path, 0.2)
         self._shape = wsi.shapes[wsi.level(self._spacing)]
+        writing_spacing = wsi.spacings[wsi.level(self._spacing)]
         wsi.close()
         del wsi
 
@@ -308,7 +309,7 @@ class WSIWriterDeamon:
         self._writer = ImageWriter(
             image_path=self._output_path,
             shape=self._shape,
-            spacing=self._spacing,
+            spacing=writing_spacing,
             dtype=self._dtype,
             coding=self._coding,
             compression="lzw",
