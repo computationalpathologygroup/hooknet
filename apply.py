@@ -131,6 +131,16 @@ if config["calc_score"]:
         "score": score,
     }
 
+    yaml_output_file = (
+        os.path.join(
+            config["output_path"], os.path.splitext(os.path.basename(image_path))[0]
+        )
+        + "_output.yml"
+    )
+
+    with open(yaml_output_file, "w") as outfile:
+        yaml.dump(output, outfile, default_flow_style=False)
+
 else:
     output = [
         (
@@ -143,5 +153,5 @@ else:
         )
     ]
 
-with open("/home/user/results.json", "w") as file:
-    json.dump(output, file)
+    with open("/home/user/results.json", "w") as file:
+        json.dump(output, file)
