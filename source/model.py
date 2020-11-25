@@ -1,24 +1,24 @@
-from typing import List, Dict, Tuple
+from pprint import pprint
+from typing import Dict, List, Tuple
 
-from tensorflow.python.framework.ops import Tensor
-from tensorflow.keras import regularizers
+from tensorflow.keras import backend, regularizers
+from tensorflow.keras.backend import int_shape
 from tensorflow.keras.layers import (
-    Conv2D,
-    MaxPooling2D,
-    BatchNormalization,
-    UpSampling2D,
-    Cropping2D,
-    concatenate,
     Add,
-    Subtract,
-    Multiply,
+    BatchNormalization,
+    Conv2D,
+    Cropping2D,
     Input,
+    MaxPooling2D,
+    Multiply,
     Reshape,
+    Subtract,
+    UpSampling2D,
+    concatenate,
 )
 from tensorflow.keras.models import Model
-from tensorflow.keras.backend import int_shape
-from tensorflow.keras.optimizers import Optimizer, SGD, Adam
-from tensorflow.keras import backend
+from tensorflow.keras.optimizers import SGD, Adam, Optimizer
+from tensorflow.python.framework.ops import Tensor
 
 
 class HookNet(Model):
@@ -489,3 +489,195 @@ class HookNet(Model):
 
         # Raise ValueError if merge type is unsupported
         raise ValueError(f"unsupported merge type: {self._merge_type}")
+
+
+class UNet(Model):
+    def __init__(
+        self,
+        patch_shape,
+        n_labels,
+        depth: int = 4,
+        n_convs: int = 2,
+        filter_size: int = 3,
+        n_filters: int = 91,
+        padding: str = "valid",
+        batch_norm: bool = True,
+        activation: str = "relu",
+        l2_lambda: float = 0.001,
+    ):
+
+        self._patch_shape = patch_shape
+        self._n_labels = n_labels
+        self._activation = activation
+        self._n_convs = n_convs
+        self._padding = padding
+        self._n_filters = n_filters
+        self._depth = depth
+        self._batch_norm = batch_norm
+        self._l2_lambda = l2_lambda
+        self._l2 = regularizers.l2(self._l2_lambda)
+        self._filter_size = filter_size
+
+        self.construct_unet()
+
+    @property
+    def patch_shape(self):
+        return self._patch_shape
+
+    @property
+    def n_labels(self):
+        return self._n_labels
+
+    @property
+    def n_filters(self):
+        return self._n_filters
+
+    @property
+    def activation(self):
+        return self._activation
+
+    @property
+    def filter_size(self):
+        return self._filter_size
+
+    @property
+    def batch_norm(self):
+        return self._batch_norm
+
+    @property
+    def n_convs(self):
+        return self._n_convs
+
+    @property
+    def depth(self):
+        return self._depth
+
+    @property
+    def padding(self):
+        return self._padding
+
+    @property
+    def l2(self):
+        return self._l2
+
+    @property
+    def output_shape(self):
+        return self._output_shape
+
+    def construct_unet(self):
+        input_ = Input(self.patch_shape)
+        flatten = self._construct_net(input_)
+        self._create_model(input_, flatten)
+
+    def _encode_path(self, net):
+        residuals = []
+        n_filters = self.n_filters
+        for b in range(self.depth):
+            net = self._conv_block(net, n_filters)
+            residuals.append(net)
+            net = MaxPooling2D(pool_size=(2, 2))(net)
+            n_filters *= 2
+        return net, residuals
+
+    def _decode_path(self, net, residuals):
+
+        n_filters = self.n_filters * 2 * self.depth
+
+        for b in reversed(range(self.depth)):
+            net = self._upsample(net, n_filters)
+            net = self._concatenator(net, residuals[b])
+            net = self._conv_block(net, n_filters)
+
+            n_filters = n_filters // 2
+
+        return net
+
+    def _conv_block(self, net, n_filters, kernel_size=3):
+        for n in range(self.n_convs):
+            net = Conv2D(
+                n_filters,
+                kernel_size,
+                activation=self.activation,
+                kernel_initializer="he_normal",
+                padding=self.padding,
+                kernel_regularizer=self.l2,
+            )(net)
+
+            if self.batch_norm:
+                net = BatchNormalization()(net)
+        return net
+
+    def _upsample(self, net, n_filters):
+        net = UpSampling2D(size=(2, 2))(net)
+        net = Conv2D(
+            n_filters,
+            self.filter_size,
+            activation=self.activation,
+            padding=self.padding,
+            kernel_regularizer=self.l2,
+        )(net)
+
+        return net
+
+    def _concatenator(self, net: Tensor, item: Tensor) -> Tensor:
+        """"Concatenate feature maps"""
+
+        # crop feature maps
+        crop_size = int(item.shape[1] - net.shape[1]) / 2
+        item_cropped = Cropping2D(int(crop_size))(item)
+
+        return concatenate([item_cropped, net], axis=3)
+
+    def _construct_net(self, input_):
+        # input
+        net = input_
+
+        # encode
+        net, residuals = self._encode_path(net)
+
+        # mid conv block
+        net = self._conv_block(net, self.n_filters * 2 * (self._depth + 1))
+
+        # decode
+        net = self._decode_path(net, residuals)
+
+        # softmax output
+        net = Conv2D(
+            self.n_labels, 1, activation="softmax", kernel_regularizer=self.l2
+        )(net)
+
+        # Reshape net
+        self._output_shape = int_shape(net)[1:]
+
+        flatten = Reshape(
+            target_shape=(
+                self._output_shape[0] * self._output_shape[1],
+                self._output_shape[2],
+            )
+        )(net)
+
+        return flatten
+
+    def _create_model(self, inputs: List[Input], outputs: List[Tensor]):
+        super().__init__(inputs, outputs)
+
+        self.compile(
+            optimizer=Adam(),
+            loss="categorical_crossentropy",
+        )
+
+    def __str__(self):
+        attributes = {
+            "patch_shape": str(self._patch_shape),
+            "n_labels": str(self._n_labels),
+            "activation": str(self._activation),
+            "n_convs": str(self._n_convs),
+            "padding": str(self._padding),
+            "n_filters": str(self._n_filters),
+            "depth": str(self._depth),
+            "batch_norm": str(self._batch_norm),
+            "l2": str(self._l2),
+            "filter_size": str(self._filter_size),
+        }
+
+        return pprint.pformat(attributes, sort_dicts=False)
