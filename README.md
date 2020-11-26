@@ -28,7 +28,7 @@ For more information, please check the code comments and the doc strings. If you
 A pretraind model on breast or colon can be applied via https://grand-challenge.org/. Please create an user account and request access to an algorith if you are interested. 
 
 You can try out a pretrained HookNet on breast tissue here:  
-https://grand-challenge.org/algorithms/hooknet/  
+https://grand-challenge.org/algorithms/hooknet-breast/  
 
 You can try out a pretrained HookNet on colon tissue here:  
 https://grand-challenge.org/algorithms/hooknet-colon/
