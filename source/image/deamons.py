@@ -74,9 +74,9 @@ class ImageProcessor(Process):
             if self._mask_path.endswith(".png"):
                 self._mask = cv2.imread(self._mask_path, cv2.IMREAD_GRAYSCALE) / 255
             else:
-                self._mask = ImageReader(self._mask_path, 0.2)
+                self._mask = ImageReader(self._mask_path, 0.3)
 
-        self._wsi = ImageReader(self._wsi_path, 0.2)
+        self._wsi = ImageReader(self._wsi_path, 0.3)
 
         self._set_ratios()
 
@@ -227,7 +227,7 @@ class WSIReaderDeamon(Process):
 
         self._pprocesses = []
 
-        wsi = ImageReader(self._wsi_path, 0.2)
+        wsi = ImageReader(self._wsi_path, 0.3)
         self._wsi_y_dims, self._wsi_x_dims = wsi.shapes[wsi.level(self._resolutions[0])]
         print("DIMENSIONS")
         print(self._wsi_x_dims, self._wsi_y_dims)
@@ -299,7 +299,7 @@ class WSIWriterDeamon:
         self._coding = "monochrome"
 
         # get shape of image
-        wsi = ImageReader(self._wsi_path, 0.2)
+        wsi = ImageReader(self._wsi_path, 0.3)
         self._shape = wsi.shapes[wsi.level(self._spacing)]
         writing_spacing = wsi.spacings[wsi.level(self._spacing)]
         wsi.close()
