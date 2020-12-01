@@ -115,7 +115,7 @@ if config["copy"] and "work_dir" in config:
 
 if config["calc_score"]:
     print("Calculating score..")
-    img_reader = ImageReader(output_file, 0.2)
+    img_reader = ImageReader(output_file, 0.3)
     ratio = 32
     spacing = img_reader.spacings[0] * 2 ** math.log(ratio, 2)
     mask = cv2.imread(mask_path)
