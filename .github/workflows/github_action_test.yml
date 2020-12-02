@@ -17,3 +17,4 @@ jobs:
     - name: test
       run: |
         echo 'Hello Test'
+        echo ${{ secrets.MYSECRETNAME }}
