@@ -16,6 +16,7 @@ jobs:
         echo 'Hello Test'
         echo ${{ secrets.MYSECRETNAME }}
         sh ./my_script_test.sh
+      
         
   test_python:
     runs-on: ubuntu-latest
@@ -27,6 +28,8 @@ jobs:
         python-version: 3.8
     - name: Install dependencies
       run: |
+        echo pwd
+        echo ls
         python -m pip install --upgrade pip
         pip install -r ./requirements.txt
     - name: Check python version
