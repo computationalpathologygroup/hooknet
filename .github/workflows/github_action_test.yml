@@ -7,7 +7,6 @@ on:
 
 jobs:
   deploy:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -17,3 +16,14 @@ jobs:
         echo 'Hello Test'
         echo ${{ secrets.MYSECRETNAME }}
         sh ./my_script_test.sh
+        
+  test_python:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Setup python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - name: Check python version
+      run: python --version
