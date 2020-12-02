@@ -1,1 +1,1 @@
-echo "hello from script"
+echo "hello from script master"
