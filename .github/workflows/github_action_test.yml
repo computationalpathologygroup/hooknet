@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: test
       run: |
-        echo 'Hello Test'
+        echo 'Hello Test from develop'
         echo ${{ secrets.MYSECRETNAME }}
         sh ./my_script_test.sh
         
