@@ -6,32 +6,47 @@ on:
     branches: master
 
 jobs:
-  deploy:
+
+  publish:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: test
-      run: |
-        echo 'Hello Test'
-        echo ${{ secrets.MYSECRETNAME }}
-        sh ./my_script_test.sh
+    - uses: actions/checkout@master
+
+    - name: Publish
+      uses: netlify/actions/cli@master
+      with:
+        args: deploy --dir=site --functions=functions
+      env:
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+   
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     - uses: actions/checkout@v2
+#     - name: test
+#       run: |
+#         echo 'Hello Test'
+#         echo ${{ secrets.MYSECRETNAME }}
+#         sh ./my_script_test.sh
       
         
-  test_python:
-    runs-on: ubuntu-latest
+#   test_python:
+#     runs-on: ubuntu-latest
     
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup python
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.8
-    - name: Install dependencies
-      run: |
-        pwd
-        ls
-        python -m pip install --upgrade pip
-        pip install -r ./requirements.txt
-    - name: Check python version
-      run: python --version
+#     steps:
+#     - uses: actions/checkout@v2
+#     - name: Setup python
+#       uses: actions/setup-python@v1
+#       with:
+#         python-version: 3.8
+#     - name: Install dependencies
+#       run: |
+#         pwd
+#         ls
+#         python -m pip install --upgrade pip
+#         pip install -r ./requirements.txt
+#     - name: Check python version
+#       run: python --version
