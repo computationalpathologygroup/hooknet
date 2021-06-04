@@ -94,6 +94,7 @@ class Inference:
         for data in iter(self._reader_queue.get, "STOP"):
             X_batch, masks, items = data
             X_batch = normalize(X_batch)
+            X_batch = X_batch[..., :3]
             pred = self._model_instance.predict_on_batch(x=X_batch)
 
             if self._multi_loss:
