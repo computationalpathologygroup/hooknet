@@ -14,7 +14,7 @@ def normalize(input):
     _type = type(input)
     if _type == np.ndarray:
         return input[..., :3] / 255.0
-    return _type(np.array(input[..., :3]) / 255.0)
+    return _type(np.array(input)[..., :3] / 255.0)
 
 
 class Inference:
