@@ -1,33 +1,51 @@
-From tensorflow/tensorflow:latest-gpu
+FROM nvidia/cuda:11.1-devel-ubuntu20.04
 
+# Set time zone
+ENV TZ=Europe/Amsterdam
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Install ASAP-1.9 package from GitHub.
-#
+# Install python3.8
+RUN : \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends software-properties-common \
+    && add-apt-repository -y ppa:deadsnakes \
+    && apt-get install -y --no-install-recommends python3.8-venv \
+    && apt-get install libpython3.8-dev -y \
+    && apt-get clean \
+    && :
 
-ARG asap_version=1.9
-ARG asap_deb=ASAP-${asap_version}-Linux-Ubuntu1804.deb
-RUN curl --remote-name --location https://github.com/computationalpathologygroup/ASAP/releases/download/${asap_version}/${asap_deb}
-RUN apt-get update
-RUN dpkg --install ${asap_deb} || true
-RUN apt-get install --fix-broken --assume-yes
-RUN ldconfig -v 
-RUN echo "/opt/ASAP/bin" > /usr/local/lib/python3.6/dist-packages/asap.pth 
-RUN rm ${asap_deb}
+# Add env to PATH
+RUN python3.8 -m venv /venv
+ENV PATH=/venv/bin:$PATH
 
+# Install ASAP2.0
+RUN : \
+    && apt-get update \
+    && apt-get -y install curl git \
+    && curl --remote-name --location "https://github.com/computationalpathologygroup/ASAP/releases/download/ASAP-2.0-(Nightly)/ASAP-2.0-py38-Ubuntu2004.deb" \
+    && dpkg --install ASAP-2.0-py38-Ubuntu2004.deb || true \
+    && apt-get -f install --fix-missing --fix-broken --assume-yes \
+    && ldconfig -v \
+    && apt-get clean \
+    && echo "/opt/ASAP/bin" > /venv/lib/python3.8/site-packages/asap.pth \
+    && rm ASAP-2.0-py38-Ubuntu2004.deb \
+    && :
+
+# Install zip
+RUN apt-get install zip --assume-yes
 
 # Install HookNet from Github
-#
-
 ARG hooknet=https://github.com/computationalpathologygroup/hooknet/archive/master.zip
 ADD ${hooknet} hooknet.zip
-RUN unzip hooknet.zip -d /usr/local/lib/python3.6/dist-packages/
-RUN mv /usr/local/lib/python3.6/dist-packages/hooknet-master /usr/local/lib/python3.6/dist-packages/hooknet
+RUN unzip hooknet.zip -d /venv/lib/python3.8/site-packages/
+RUN mv /venv/lib/python3.8/site-packages/hooknet-master /venv/lib/python3.8/site-packages/hooknet
 RUN rm hooknet.zip
 
 
-# Install  requirements
+# Install requirements
 COPY ./requirements.txt /tmp/
 RUN pip install --requirement /tmp/requirements.txt
 COPY . /tmp/
 
-WORKDIR /usr/local/lib/python3.6/dist-packages/hooknet
+# Set workdir
+WORKDIR /venv/lib/python3.8/site-packages/hooknet
