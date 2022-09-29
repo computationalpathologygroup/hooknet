@@ -140,9 +140,9 @@ class ImageProcessor(Process):
 
         if self._mask_path.endswith(".png"):
             # get level 0 coordinates
-            mask_x = centerx * self._wsi_ratio
-            mask_y = centery * self._wsi_ratio
-
+            mask_x = centerx * (self._wsi_ratio//2)
+            mask_y = centery * (self._wsi_ratio//2)
+            
             # center to top-left with mask ratio
             mask_x = (
                 mask_x // self._mask_ratio
@@ -325,6 +325,7 @@ class WSIWriterDeamon:
     def put(self, write_message):
         # for write_message in iter(self._writer_queue.get, 'STOP'):
         predictions, masks, items = write_message
+        predictions = predictions[0]
         t1 = time.time()
         for idx, prediction in enumerate(predictions):
             col, row = items[idx]
@@ -334,6 +335,7 @@ class WSIWriterDeamon:
             prediction = prediction[: self._tile_size, : self._tile_size].astype(
                 "uint8"
             )
+            
             mask = fit_data(masks[idx], [self._tile_size, self._tile_size]).astype(
                 "uint8"
             )

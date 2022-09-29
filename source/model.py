@@ -15,11 +15,11 @@ from tensorflow.keras.layers import (
     Subtract,
     UpSampling2D,
     concatenate,
+    LeakyReLU,
 )
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import SGD, Adam, Optimizer
 from tensorflow.python.framework.ops import Tensor
-
 
 class HookNet(Model):
 
@@ -122,6 +122,9 @@ class HookNet(Model):
         self._l2_lambda = l2_lambda
         self._loss_weights = loss_weights
         self._merge_type = merge_type
+        
+        if self._activation == 'lrelu':
+            self._activation = LeakyReLU(alpha=0.1)
 
         # determine multi-loss model from loss weights
         self._multi_loss = any(loss_weights[1:])
