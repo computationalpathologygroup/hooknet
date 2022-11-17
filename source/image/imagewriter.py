@@ -105,26 +105,26 @@ class ImageWriter(object):
         # Convert data type.
         #
         if dtype == np.uint8:
-            dtype_param = mir.UChar
+            dtype_param = mir.DataType_UChar
         elif dtype == np.uint16:
-            dtype_param = mir.UInt16
+            dtype_param = mir.DataType_UInt16
         elif dtype == np.uint32:
-            dtype_param = mir.UInt32
+            dtype_param = mir.DataType_UInt32
         elif dtype == np.float32:
-            dtype_param = mir.Float
+            dtype_param = mir.DataType_Float
         else:
             raise ValueError(f'Invalid data type: {dtype}') 
 
         # Convert color coding.
         #
         if coding == 'monochrome':
-            coding_param = mir.Monochrome
+            coding_param = mir.ColorType_Monochrome
             channel_count = 1
         elif coding == 'rgb':
-            coding_param = mir.RGB
+            coding_param = mir.ColorType_RGB
             channel_count = 3
         elif coding == 'argb':
-            coding_param = mir.ARGB
+            coding_param = mir.ColorType_ARGB
             channel_count = 4
         else:
             raise ValueError(f'Invalid color type: {coding}') 
@@ -133,11 +133,11 @@ class ImageWriter(object):
         #
         if compression is not None:
             if compression == 'raw':
-                compression_param = mir.RAW
+                compression_param = mir.Compression_RAW
             elif compression == 'jpeg':
-                compression_param = mir.JPEG
+                compression_param = mir.Compression_JPEG
             elif compression == 'lzw':
-                compression_param = mir.LZW
+                compression_param = mir.Compression_LZW
             else:
                 raise ValueError(f'Invalid compression method: {compression}') 
 
@@ -146,19 +146,19 @@ class ImageWriter(object):
             # Derive the compression method from the color coding.
             #
             if coding == 'monochrome':
-                compression_param = mir.LZW
+                compression_param = mir.Compression_LZW
                 compression_save = 'lzw'
             else:
-                compression_param = mir.JPEG
+                compression_param = mir.Compression_JPEG
                 compression_save = 'jpeg'
 
         # Convert interpolation method.
         #
         if interpolation is not None:
             if interpolation == 'nearest':
-                interpolation_param = mir.NearestNeighbor
+                interpolation_param = mir.Interpolation_NearestNeighbor
             elif interpolation == 'linear':
-                interpolation_param = mir.Linear
+                interpolation_param = mir.Interpolation_Linear
             else:
                 raise ValueError(f'Invalid interpolation method: {interpolation}') 
 
@@ -167,10 +167,10 @@ class ImageWriter(object):
             # Derive the interpolation method from the color coding.
             #
             if coding == 'monochrome':
-                interpolation_param = mir.NearestNeighbor
+                interpolation_param = mir.Interpolation_NearestNeighbor
                 interpolation_save = 'nearest'
             else:
-                interpolation_param = mir.Linear
+                interpolation_param = mir.Interpolation_Linear
                 interpolation_save = 'linear'
 
         # Check tile size.

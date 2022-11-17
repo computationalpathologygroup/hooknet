@@ -1,17 +1,17 @@
 FROM tensorflow/tensorflow:2.9.0-gpu
 
 
-# Install ASAP2.0
+# Install ASAP 2.1
 RUN : \
     && apt-get update \
-    && apt-get -y install curl git \
-    && curl --remote-name --location "https://github.com/computationalpathologygroup/ASAP/releases/download/ASAP-2.0-(Nightly)/ASAP-2.0-py38-Ubuntu2004.deb" \
-    && dpkg --install ASAP-2.0-py38-Ubuntu2004.deb || true \
+    && apt-get -y install curl \
+    && curl --remote-name --location "https://github.com/computationalpathologygroup/ASAP/releases/download/ASAP-2.1-(Nightly)/ASAP-2.1-Ubuntu2004.deb" \
+    && dpkg --install ASAP-2.1-Ubuntu2004.deb || true \
     && apt-get -f install --fix-missing --fix-broken --assume-yes \
     && ldconfig -v \
     && apt-get clean \
     && echo "/opt/ASAP/bin" > /usr/local/lib/python3.8/dist-packages/asap.pth \
-    && rm ASAP-2.0-py38-Ubuntu2004.deb \
+    && rm ASAP-2.1-Ubuntu2004.deb \
     && :
 
 # Install zip
